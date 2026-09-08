@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FORESHADOW</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+
+<body>
+
+  <!-- Landing -->
+
+  <div id="landing" class="landing">
+
+    <div class="brand">
+      <h1>FORESHADOW</h1>
+      <p class="subtitle">Shoot-Day Preflight Auditor</p>
+    </div>
+
+    <div class="launch-area">
+      <button id="runButton">Run Preflight</button>
+      <div id="loading" class="loading-state"></div>
+    </div>
+
+  </div>
+
+
+  <!-- Results -->
+
+  <div id="results" hidden>
+
+    <!-- Shoot information -->
+
+    <div class="shoot-header">
+
+      <p class="eyebrow">
+        ACTIVE PREFLIGHT
+      </p>
+
+      <h2 id="projectName"></h2>
+
+      <p id="location" class="muted"></p>
+
+    </div>
+
+
+    <!-- Slack + Status -->
+
+    <div class="result-grid">
+
+      <div class="hero-card">
+
+        <p class="eyebrow">
+          OPERATIONAL SLACK
+        </p>
+
+        <div class="failure-hero">
+  <div id="slack" class="big-number"></div>
+  <div class="failure-caption">FROM FAILURE</div>
+</div>
+
+        <p class="muted">
+          remaining before the verified hard boundary
+        </p>
+
+      </div>
+
+
+      <div class="status-card">
+
+        <p class="eyebrow">
+          RISK STATUS
+        </p>
+
+        <div
+          id="riskStatus"
+          class="status"
+        ></div>
+
+        <p class="muted">
+          based on validated external evidence
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- Critical Boundary -->
+
+    <div class="boundary-card">
+
+      <div>
+
+        <p class="eyebrow">
+          CRITICAL BOUNDARY
+        </p>
+
+        <h2 id="boundary"></h2>
+
+      </div>
+
+      <span class="verified">
+        ✓ VERIFIED
+      </span>
+
+    </div>
+
+
+    <!-- Failure Pathway -->
+
+    <div class="failure-section">
+
+      <div class="section-heading">
+
+        <p class="eyebrow failure-title">
+          MINIMUM FAILURE PATH
+        </p>
+
+        <p class="failure-subtitle">
+          Smallest combination of disruptions that exceeds available slack.
+        </p>
+
+      </div>
+
+
+      <div id="failurePath" class="failure-path">
+
+        <div class="failure-item">
+
+          <span id="failureOneName"></span>
+
+          <strong id="failureOneMinutes"></strong>
+
+        </div>
+
+
+        <div class="failure-plus">
+          +
+        </div>
+
+
+        <div class="failure-item">
+
+          <span id="failureTwoName"></span>
+
+          <strong id="failureTwoMinutes"></strong>
+
+        </div>
+
+
+        <div class="failure-divider"></div>
+
+
+        <div class="failure-summary failure-total">
+  <span>Total disruption</span>
+  <strong id="failureTotal"></strong>
+</div>
+
+<div class="failure-summary failure-slack">
+  <span>Available slack</span>
+  <strong id="failureSlack"></strong>
+</div>
+
+        <div class="failure-result">
+          SCHEDULE BREAKS
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- Evidence -->
+
+    <div class="evidence-section">
+
+      <div class="section-heading">
+
+        <p class="eyebrow evidence-title">
+          EVIDENCE
+        </p>
+
+        <p class="evidence-subtitle">
+          Only validated evidence enters the risk calculation.
+        </p>
+
+      </div>
+
+
+      <div class="evidence-grid">
+
+        <!-- Sunset -->
+
+        <div class="evidence-card">
+
+          <div class="evidence-top">
+
+            <h3>Sunset</h3>
+
+            <span
+              id="sunsetEvidenceStatus"
+              class="evidence-badge"
+            ></span>
+
+          </div>
+
+          <p
+            id="sunsetEvidenceValue"
+            class="evidence-value"
+          ></p>
+
+          <p
+            id="sunsetEvidenceReason"
+            class="evidence-reason"
+          ></p>
+
+          <a
+            id="sunsetEvidenceSource"
+            class="evidence-source"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View source ↗
+          </a>
+
+        </div>
+
+
+        <!-- Weather -->
+
+        <div class="evidence-card">
+
+          <div class="evidence-top">
+
+            <h3>Weather</h3>
+
+            <span
+              id="weatherEvidenceStatus"
+              class="evidence-badge"
+            ></span>
+
+          </div>
+
+          <p
+            id="weatherEvidenceReason"
+            class="evidence-reason"
+          ></p>
+
+          <a
+            id="weatherEvidenceSource"
+            class="evidence-source"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View source ↗
+          </a>
+
+        </div>
+
+
+        <!-- Location Access -->
+
+        <div class="evidence-card">
+
+          <div class="evidence-top">
+
+            <h3>Location Access</h3>
+
+            <span
+              id="accessEvidenceStatus"
+              class="evidence-badge"
+            ></span>
+
+          </div>
+
+          <p
+            id="accessEvidenceReason"
+            class="evidence-reason"
+          ></p>
+
+          <a
+            id="accessEvidenceSource"
+            class="evidence-source"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View source ↗
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- JavaScript -->
+
+  <script>
+
+    const runButton =
+      document.getElementById("runButton");
+
+      runButton.addEventListener("mouseenter", () => {
+        document.body.classList.add("button-hover");
+      });
+      runButton.addEventListener("mouseleave", () => {
+        document.body.classList.remove("button-hover");
+      });
+
+    const loading =
+      document.getElementById("loading");
+
+    const results =
+      document.getElementById("results");
+
+
+    runButton.addEventListener("click", async () => {
+
+      const loadingMessages = [
+  "Searching live constraints...",
+  "Validating evidence...",
+  "Calculating operational slack...",
+  "Finding failure pathways..."
+];
+
+let loadingIndex = 0;
+
+loading.textContent = loadingMessages[loadingIndex];
+
+const loadingInterval = setInterval(() => {
+  loadingIndex =
+    (loadingIndex + 1) % loadingMessages.length;
+
+  loading.textContent =
+    loadingMessages[loadingIndex];
+}, 900);
+      results.hidden = true;
+
+
+      try {
+
+        const response =
+          await fetch("/api/preflight");
+
+        const data =
+          await response.json();
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error || "Preflight failed"
+          );
+
+        }
+
+
+        /* Shoot information */
+
+        document
+          .getElementById("projectName")
+          .textContent =
+            data.shootDay.projectName;
+
+
+        document
+          .getElementById("location")
+          .textContent =
+            `${data.shootDay.location} • ${data.shootDay.date}`;
+
+
+        /* Main result */
+
+        document
+          .getElementById("slack")
+
+          const slackElement = document.getElementById("slack");
+          const targetSlack = Number(data.slackMinutes);
+          let displayedSlack = 0;
+          slackElement.textContent = "0 minutes";
+
+          const slackCounter = setInterval(() => {
+            displayedSlack+= 1;
+
+            slackElement.textContent =
+            `${displayedSlack} ${displayedSlack === 1 ? "minute" : "minutes"}`;
+
+            if(displayedSlack >= data.slackMinutes) {
+              clearInterval(slackCounter);
+            }
+          }, 55);
+
+        document
+          .getElementById("riskStatus")
+          .textContent =
+            data.status;
+
+            const riskStatusElement = document.getElementById("riskStatus");
+
+            riskStatusElement.classList.remove(
+              "status-safe",
+              "status-risk",
+              "status-broken"
+            );
+
+            if (data.status === "SAFE") {
+              riskStatusElement.classList.add("status-safe");
+            }
+
+            if (data.status === "AT RISK") {
+              riskStatusElement.classList.add("status-risk");
+            }
+
+            if (data.status === "BROKEN") {
+              riskStatusElement.classList.add("status-broken")
+            }
+
+
+        document
+          .getElementById("boundary")
+          .textContent =
+            `${data.boundaryFact.type}: ${data.boundaryFact.value}`;
+
+
+        /* Failure pathway */
+
+        const failureSets =
+          data.minimumFailureSets;
+
+
+        if (failureSets.length > 0) {
+
+          const firstFailureSet =
+            failureSets[0];
+
+          const firstDisruption =
+            firstFailureSet[0];
+
+          const secondDisruption =
+            firstFailureSet[1];
+
+
+          const totalFailureMinutes =
+            firstFailureSet.reduce(
+              (sum, disruption) =>
+                sum + disruption.minutes,
+              0
+            );
+
+
+          document
+            .getElementById("failureOneName")
+            .textContent =
+              firstDisruption.name;
+
+
+          document
+            .getElementById("failureOneMinutes")
+            .textContent =
+              `${firstDisruption.minutes} min`;
+
+
+          document
+            .getElementById("failureTwoName")
+            .textContent =
+              secondDisruption.name;
+
+
+          document
+            .getElementById("failureTwoMinutes")
+            .textContent =
+              `${secondDisruption.minutes} min`;
+
+
+          document
+            .getElementById("failureTotal")
+            .textContent =
+              `${totalFailureMinutes} min`;
+
+
+          document
+            .getElementById("failureSlack")
+            .textContent =
+              `${data.slackMinutes} min`;
+
+        }
+
+
+        /* Evidence */
+
+        const sunsetEvidence =
+          data.evidence.sunset;
+
+        const weatherEvidence =
+          data.evidence.weather;
+
+        const accessEvidence =
+          data.evidence.access;
+
+
+        /* Sunset */
+
+        document
+          .getElementById("sunsetEvidenceStatus")
+          .textContent =
+            sunsetEvidence.status;
+
+
+        document
+          .getElementById("sunsetEvidenceValue")
+          .textContent =
+            sunsetEvidence.fact
+              ? `Verified sunset: ${sunsetEvidence.fact.value}`
+              : "No validated sunset evidence";
+
+
+        document
+          .getElementById("sunsetEvidenceReason")
+          .textContent =
+            sunsetEvidence.fact?.rejectionReason ||
+            "Used in risk calculation";
+
+
+        if (sunsetEvidence.fact?.sourceUrl) {
+
+          document
+            .getElementById("sunsetEvidenceSource")
+            .href =
+              sunsetEvidence.fact.sourceUrl;
+
+        }
+
+
+        /* Weather */
+
+        document
+          .getElementById("weatherEvidenceStatus")
+          .textContent =
+            weatherEvidence.status;
+
+
+        document
+          .getElementById("weatherEvidenceReason")
+          .textContent =
+            weatherEvidence.fact?.rejectionReason ||
+            "Used in risk calculation";
+
+
+        if (weatherEvidence.fact?.sourceUrl) {
+
+          document
+            .getElementById("weatherEvidenceSource")
+            .href =
+              weatherEvidence.fact.sourceUrl;
+
+        }
+
+
+        /* Location access */
+
+        document
+          .getElementById("accessEvidenceStatus")
+          .textContent =
+            accessEvidence.status;
+
+
+        document
+          .getElementById("accessEvidenceReason")
+          .textContent =
+            accessEvidence.fact?.rejectionReason ||
+            "Used in risk calculation";
+
+
+        if (accessEvidence.fact?.sourceUrl) {
+
+          document
+            .getElementById("accessEvidenceSource")
+            .href =
+              accessEvidence.fact.sourceUrl;
+
+        }
+
+
+        /* Show dashboard */
+        clearInterval(loadingInterval);
+
+        loading.textContent = "";
+
+        document.body.classList.add(
+          "preflight-loaded"
+        );
+
+        results.hidden = false;
+
+      }
+
+
+      catch (error) {
+        clearInterval(loadingInterval);
+
+        loading.textContent =
+          "Preflight failed";
+
+        console.error(error);
+
+      }
+
+    });
+
+  </script>
+
+</body>
+
+</html>
