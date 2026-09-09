@@ -57,9 +57,9 @@
         </p>
 
         <div class="failure-hero">
-  <div id="slack" class="big-number"></div>
-  <div class="failure-caption">FROM FAILURE</div>
-</div>
+          <div id="slack" class="big-number"></div>
+          <div class="failure-caption">FROM FAILURE</div>
+        </div>
 
         <p class="muted">
           remaining before the verified hard boundary
@@ -155,14 +155,16 @@
 
 
         <div class="failure-summary failure-total">
-  <span>Total disruption</span>
-  <strong id="failureTotal"></strong>
-</div>
+          <span>Total disruption</span>
+          <strong id="failureTotal"></strong>
+        </div>
 
-<div class="failure-summary failure-slack">
-  <span>Available slack</span>
-  <strong id="failureSlack"></strong>
-</div>
+
+        <div class="failure-summary failure-slack">
+          <span>Available slack</span>
+          <strong id="failureSlack"></strong>
+        </div>
+
 
         <div class="failure-result">
           SCHEDULE BREAKS
@@ -306,13 +308,6 @@
     const runButton =
       document.getElementById("runButton");
 
-      runButton.addEventListener("mouseenter", () => {
-        document.body.classList.add("button-hover");
-      });
-      runButton.addEventListener("mouseleave", () => {
-        document.body.classList.remove("button-hover");
-      });
-
     const loading =
       document.getElementById("loading");
 
@@ -320,26 +315,41 @@
       document.getElementById("results");
 
 
+    runButton.addEventListener("mouseenter", () => {
+      document.body.classList.add("button-hover");
+    });
+
+    runButton.addEventListener("mouseleave", () => {
+      document.body.classList.remove("button-hover");
+    });
+
+
     runButton.addEventListener("click", async () => {
 
       const loadingMessages = [
-  "Searching live constraints...",
-  "Validating evidence...",
-  "Calculating operational slack...",
-  "Finding failure pathways..."
-];
+        "Searching live constraints...",
+        "Validating evidence...",
+        "Calculating operational slack...",
+        "Finding failure pathways..."
+      ];
 
-let loadingIndex = 0;
+      let loadingIndex = 0;
 
-loading.textContent = loadingMessages[loadingIndex];
+      loading.textContent =
+        loadingMessages[loadingIndex];
 
-const loadingInterval = setInterval(() => {
-  loadingIndex =
-    (loadingIndex + 1) % loadingMessages.length;
+      runButton.disabled = true;
 
-  loading.textContent =
-    loadingMessages[loadingIndex];
-}, 900);
+      const loadingInterval = setInterval(() => {
+
+        loadingIndex =
+          (loadingIndex + 1) % loadingMessages.length;
+
+        loading.textContent =
+          loadingMessages[loadingIndex];
+
+      }, 900);
+
       results.hidden = true;
 
 
@@ -375,63 +385,90 @@ const loadingInterval = setInterval(() => {
             `${data.shootDay.location} • ${data.shootDay.date}`;
 
 
-        /* Main result */
+        /* Operational slack */
 
-        document
-          .getElementById("slack")
+        const slackElement =
+          document.getElementById("slack");
 
-          const slackElement = document.getElementById("slack");
-          const targetSlack = Number(data.slackMinutes);
-          let displayedSlack = 0;
-          slackElement.textContent = "0 minutes";
+        const targetSlack =
+          Number(data.slackMinutes);
 
-          const slackCounter = setInterval(() => {
-            displayedSlack+= 1;
+        let displayedSlack = 0;
 
-            slackElement.textContent =
-            `${displayedSlack} ${displayedSlack === 1 ? "minute" : "minutes"}`;
+        slackElement.textContent =
+          "0 minutes";
 
-            if(displayedSlack >= data.slackMinutes) {
-              clearInterval(slackCounter);
-            }
-          }, 55);
 
-        document
-          .getElementById("riskStatus")
-          .textContent =
-            data.status;
+        if (targetSlack <= 0) {
 
-            const riskStatusElement = document.getElementById("riskStatus");
+          slackElement.textContent =
+            `${targetSlack} ${targetSlack === 1 ? "minute" : "minutes"}`;
 
-            riskStatusElement.classList.remove(
-              "status-safe",
-              "status-risk",
-              "status-broken"
-            );
+        } else {
 
-            if (data.status === "SAFE") {
-              riskStatusElement.classList.add("status-safe");
-            }
+          const slackCounter =
+            setInterval(() => {
 
-            if (data.status === "AT RISK") {
-              riskStatusElement.classList.add("status-risk");
-            }
+              displayedSlack += 1;
 
-            if (data.status === "BROKEN") {
-              riskStatusElement.classList.add("status-broken")
-            }
+              slackElement.textContent =
+                `${displayedSlack} ${displayedSlack === 1 ? "minute" : "minutes"}`;
 
+              if (displayedSlack >= targetSlack) {
+                clearInterval(slackCounter);
+              }
+
+            }, 55);
+
+        }
+
+
+        /* Risk status */
+
+        const riskStatusElement =
+          document.getElementById("riskStatus");
+
+        riskStatusElement.textContent =
+          data.status;
+
+        riskStatusElement.classList.remove(
+          "status-safe",
+          "status-risk",
+          "status-broken"
+        );
+
+
+        if (data.status === "SAFE") {
+          riskStatusElement.classList.add(
+            "status-safe"
+          );
+        }
+
+        if (data.status === "AT RISK") {
+          riskStatusElement.classList.add(
+            "status-risk"
+          );
+        }
+
+        if (data.status === "BROKEN") {
+          riskStatusElement.classList.add(
+            "status-broken"
+          );
+        }
+
+
+        /* Critical boundary */
 
         document
           .getElementById("boundary")
           .textContent =
-            `${data.boundaryFact.type}: ${data.boundaryFact.value}`;
+            `${data.hardEdge.edgeType}: ${data.hardEdge.value}`;
 
 
-        /* Failure pathway */
+        /* Minimum failure pathway */
 
         const failureSets =
-          data.minimumFailureSets;
+          data.minimumFailureSets || [];
 
 
         if (failureSets.length > 0) {
@@ -440,48 +477,44 @@ const loadingInterval = setInterval(() => {
             failureSets[0];
 
           const firstDisruption =
-            firstFailureSet[0];
+            firstFailureSet.disruptions?.[0];
 
           const secondDisruption =
-            firstFailureSet[1];
-
-
-          const totalFailureMinutes =
-            firstFailureSet.reduce(
-              (sum, disruption) =>
-                sum + disruption.minutes,
-              0
-            );
+            firstFailureSet.disruptions?.[1];
 
 
           document
             .getElementById("failureOneName")
             .textContent =
-              firstDisruption.name;
+              firstDisruption?.name || "Disruption";
 
 
           document
             .getElementById("failureOneMinutes")
             .textContent =
-              `${firstDisruption.minutes} min`;
+              firstDisruption
+                ? `${firstDisruption.minutes} min`
+                : "—";
 
 
           document
             .getElementById("failureTwoName")
             .textContent =
-              secondDisruption.name;
+              secondDisruption?.name || "Disruption";
 
 
           document
             .getElementById("failureTwoMinutes")
             .textContent =
-              `${secondDisruption.minutes} min`;
+              secondDisruption
+                ? `${secondDisruption.minutes} min`
+                : "—";
 
 
           document
             .getElementById("failureTotal")
             .textContent =
-              `${totalFailureMinutes} min`;
+              `${firstFailureSet.totalDelayMinutes} min`;
 
 
           document
@@ -495,119 +528,265 @@ const loadingInterval = setInterval(() => {
         /* Evidence */
 
         const sunsetEvidence =
-          data.evidence.sunset;
+          data.evidence?.sunset || {};
 
         const weatherEvidence =
-          data.evidence.weather;
+          data.evidence?.weather || {};
 
         const accessEvidence =
-          data.evidence.access;
+          data.evidence?.access || {};
+
+        const skippedTargets =
+          data.skippedInvestigationTargets || [];
 
 
         /* Sunset */
 
-        document
-          .getElementById("sunsetEvidenceStatus")
-          .textContent =
-            sunsetEvidence.status;
+        const sunsetStatusEl =
+          document.getElementById(
+            "sunsetEvidenceStatus"
+          );
+
+        const sunsetValueEl =
+          document.getElementById(
+            "sunsetEvidenceValue"
+          );
+
+        const sunsetReasonEl =
+          document.getElementById(
+            "sunsetEvidenceReason"
+          );
+
+        const sunsetSourceEl =
+          document.getElementById(
+            "sunsetEvidenceSource"
+          );
 
 
-        document
-          .getElementById("sunsetEvidenceValue")
-          .textContent =
-            sunsetEvidence.fact
-              ? `Verified sunset: ${sunsetEvidence.fact.value}`
-              : "No validated sunset evidence";
+        sunsetStatusEl.textContent =
+          sunsetEvidence.status || "UNKNOWN";
 
 
-        document
-          .getElementById("sunsetEvidenceReason")
-          .textContent =
-            sunsetEvidence.fact?.rejectionReason ||
-            "Used in risk calculation";
+        sunsetValueEl.textContent =
+          sunsetEvidence.fact
+            ? `Verified sunset: ${sunsetEvidence.fact.value}`
+            : "No validated sunset evidence";
+
+
+        sunsetReasonEl.textContent =
+          sunsetEvidence.status === "USED"
+            ? "Used in risk calculation"
+            : sunsetEvidence.fact?.rejectionReason ||
+              "Not used in risk calculation";
 
 
         if (sunsetEvidence.fact?.sourceUrl) {
 
-          document
-            .getElementById("sunsetEvidenceSource")
-            .href =
-              sunsetEvidence.fact.sourceUrl;
+          sunsetSourceEl.href =
+            sunsetEvidence.fact.sourceUrl;
+
+          sunsetSourceEl.style.display =
+            "";
+
+        } else {
+
+          sunsetSourceEl.removeAttribute(
+            "href"
+          );
+
+          sunsetSourceEl.style.display =
+            "none";
 
         }
 
 
         /* Weather */
 
-        document
-          .getElementById("weatherEvidenceStatus")
-          .textContent =
-            weatherEvidence.status;
+        const weatherWasSkipped =
+          skippedTargets.some(
+            (target) =>
+              target.category === "WEATHER"
+          );
+
+        const weatherStatusEl =
+          document.getElementById(
+            "weatherEvidenceStatus"
+          );
+
+        const weatherReasonEl =
+          document.getElementById(
+            "weatherEvidenceReason"
+          );
+
+        const weatherSourceEl =
+          document.getElementById(
+            "weatherEvidenceSource"
+          );
 
 
-        document
-          .getElementById("weatherEvidenceReason")
-          .textContent =
-            weatherEvidence.fact?.rejectionReason ||
-            "Used in risk calculation";
+        if (weatherWasSkipped) {
+
+          weatherStatusEl.textContent =
+            "NOT INVESTIGATED";
+
+          weatherReasonEl.textContent =
+            "Skipped within the current investigation budget. Not used in risk calculation.";
+
+          weatherSourceEl.removeAttribute(
+            "href"
+          );
+
+          weatherSourceEl.style.display =
+            "none";
+
+        } else {
+
+          weatherStatusEl.textContent =
+            weatherEvidence.status ||
+            "UNKNOWN";
+
+          weatherReasonEl.textContent =
+            weatherEvidence.status === "USED"
+              ? "Used in risk calculation"
+              : weatherEvidence.fact?.rejectionReason ||
+                "Not used in risk calculation";
 
 
-        if (weatherEvidence.fact?.sourceUrl) {
+          if (weatherEvidence.fact?.sourceUrl) {
 
-          document
-            .getElementById("weatherEvidenceSource")
-            .href =
+            weatherSourceEl.href =
               weatherEvidence.fact.sourceUrl;
+
+            weatherSourceEl.style.display =
+              "";
+
+          } else {
+
+            weatherSourceEl.removeAttribute(
+              "href"
+            );
+
+            weatherSourceEl.style.display =
+              "none";
+
+          }
 
         }
 
 
         /* Location access */
 
-        document
-          .getElementById("accessEvidenceStatus")
-          .textContent =
-            accessEvidence.status;
+        const accessWasSkipped =
+          skippedTargets.some(
+            (target) =>
+              target.category === "ACCESS"
+          );
+
+        const accessStatusEl =
+          document.getElementById(
+            "accessEvidenceStatus"
+          );
+
+        const accessReasonEl =
+          document.getElementById(
+            "accessEvidenceReason"
+          );
+
+        const accessSourceEl =
+          document.getElementById(
+            "accessEvidenceSource"
+          );
 
 
-        document
-          .getElementById("accessEvidenceReason")
-          .textContent =
-            accessEvidence.fact?.rejectionReason ||
-            "Used in risk calculation";
+        if (accessWasSkipped) {
+
+          accessStatusEl.textContent =
+            "NOT INVESTIGATED";
+
+          accessReasonEl.textContent =
+            "Skipped within the current investigation budget. Not used in risk calculation.";
+
+          accessSourceEl.removeAttribute(
+            "href"
+          );
+
+          accessSourceEl.style.display =
+            "none";
+
+        } else {
+
+          accessStatusEl.textContent =
+            accessEvidence.status ||
+            "UNKNOWN";
+
+          accessReasonEl.textContent =
+            accessEvidence.status === "USED"
+              ? "Used in risk calculation"
+              : accessEvidence.fact?.rejectionReason ||
+                "Not used in risk calculation";
 
 
-        if (accessEvidence.fact?.sourceUrl) {
+          if (accessEvidence.fact?.sourceUrl) {
 
-          document
-            .getElementById("accessEvidenceSource")
-            .href =
+            accessSourceEl.href =
               accessEvidence.fact.sourceUrl;
+
+            accessSourceEl.style.display =
+              "";
+
+          } else {
+
+            accessSourceEl.removeAttribute(
+              "href"
+            );
+
+            accessSourceEl.style.display =
+              "none";
+
+          }
 
         }
 
 
         /* Show dashboard */
-        clearInterval(loadingInterval);
 
-        loading.textContent = "";
+        clearInterval(
+          loadingInterval
+        );
+
+        loading.textContent =
+          "";
 
         document.body.classList.add(
           "preflight-loaded"
         );
 
-        results.hidden = false;
+        results.hidden =
+          false;
 
       }
 
 
       catch (error) {
-        clearInterval(loadingInterval);
+
+        clearInterval(
+          loadingInterval
+        );
 
         loading.textContent =
           "Preflight failed";
 
-        console.error(error);
+        console.error(
+          error
+        );
+
+      }
+
+
+      finally {
+
+        runButton.disabled =
+          false;
 
       }
 

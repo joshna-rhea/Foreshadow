@@ -1,9 +1,6 @@
 import { Parallel } from "parallel-web";
 
-import {
-  sunsetFactFromResult,
-  weatherFactFromResult,
-  accessFactFromResult,
+import { sunsetFactFromResult, weatherFactFromResult, accessFactFromResult,
   type WeatherEvidence,
   type AccessEvidence
 } from "./evidence.js";
@@ -31,6 +28,8 @@ import {
   selectInvestigationTargets,
   type InvestigationTarget
 } from "./investigation-engine.js";
+
+import { rankInvestigationTargets} from "./investigation-ranker.js";
 
 const client = new Parallel({
   apiKey: process.env.PARALLEL_API_KEY
@@ -177,13 +176,57 @@ const client = new Parallel({
       initialAssumptionAttacks
     );
 
-  const INVESTIGATION_BUDGET = 2;
+ const INVESTIGATION_BUDGET = 1;
 
-const selectedInvestigationTargets =
-  selectInvestigationTargets(
-    investigationTargets,
-    INVESTIGATION_BUDGET
+let rankingSource:
+  | "GEMINI_ADK"
+  | "DETERMINISTIC_FALLBACK" =
+    "GEMINI_ADK";
+
+let selectedInvestigationTargets:
+  InvestigationTarget[];
+
+try {
+  const rankedIds =
+    await rankInvestigationTargets(
+      shootDay,
+      investigationTargets
+    );
+
+  const rankIndex =
+    new Map(
+      rankedIds.map(
+        (id, index) => [id, index]
+      )
+    );
+
+  const rankedTargets =
+    [...investigationTargets].sort(
+      (a, b) =>
+        (rankIndex.get(a.id) ?? Infinity) -
+        (rankIndex.get(b.id) ?? Infinity)
+    );
+
+  selectedInvestigationTargets =
+    rankedTargets.slice(
+      0,
+      INVESTIGATION_BUDGET
+    );
+
+} catch (error) {
+  console.warn(
+    "Gemini ADK ranking failed. Using deterministic fallback."
   );
+
+  rankingSource =
+    "DETERMINISTIC_FALLBACK";
+
+  selectedInvestigationTargets =
+    selectInvestigationTargets(
+      investigationTargets,
+      INVESTIGATION_BUDGET
+    );
+}
 
 const skippedInvestigationTargets =
   investigationTargets.filter(
@@ -322,6 +365,7 @@ const skippedInvestigationTargets =
    selectedInvestigationTargets,
    skippedInvestigationTargets,
    investigationBudget: INVESTIGATION_BUDGET,
+                        rankingSource,
 
     evidence: {
 
